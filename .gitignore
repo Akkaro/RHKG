@@ -1,0 +1,28 @@
+# Python-specific
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Machine Learning Models & Checkpoints
+**/checkpoint-*/
+*.safetensors
+*.pt
+*.pth
+*.bin
+
+# Model folders
+hipe-ajmc-model/
+hipe-ajmc-model-final/
+ner/hipe-ajmc-model/
+ner/hipe-ajmc-model-final/
+
+# Environment and logs
+.venv/
+env/
+venv/
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db
