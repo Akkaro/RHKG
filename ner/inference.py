@@ -8,12 +8,10 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
 
 # 2. Create the Inference Pipeline
-# aggregation_strategy="simple" merges "Na", "##po", "##leon" back into "Napoleon"
 ner_pipeline = pipeline("token-classification", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
 
-# 3. Test on a sample sentence (Historical context)
-# text = "In 1802, Napoleon Bonaparte visited the city of Paris to discuss the Treaty of Amiens."
-text = "See Matthew 5:2 for a discussion on the Sermon on the Mount."
+# 3. Test on a sample sentence
+text = "In 1802, Napoleon Bonaparte visited the city of Paris to discuss the Treaty of Amiens."
 
 print(f"\nInput: {text}\n")
 results = ner_pipeline(text)

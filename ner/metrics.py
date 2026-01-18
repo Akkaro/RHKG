@@ -1,8 +1,6 @@
 import numpy as np
 import evaluate
 
-# 'seqeval' is the standard library for NER evaluation.
-# It calculates F1 based on full entities (e.g., "New York"), not just individual words.
 seqeval = evaluate.load("seqeval")
 
 def compute_metrics(p, id2label):
@@ -10,7 +8,7 @@ def compute_metrics(p, id2label):
     Computes Span-Level F1 scores, Precision, and Recall ignoring -100 (masked subwords).
     """
     predictions, labels = p
-    # Convert logits (probabilities) to the single mostly likely class ID
+    # Convert probabilities to the single mostly likely class ID
     predictions = np.argmax(predictions, axis=2)
 
     # Convert predictions and labels from integers to strings

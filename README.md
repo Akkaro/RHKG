@@ -1,8 +1,8 @@
-# Verifiable Historical NER Pipeline
+# Historical NER to Knowledge Graph Pipeline
 
 ## 1. Project Overview
+This project implements a fine-tuned Named Entity Recognition (NER) pipeline specialized for **historical multilingual documents** (specifically the HIPE-2022 AJMC dataset). It transforms raw historical text into structured entities ready for ingestion into a **Knowledge Graph**.
 
-This project implements an End-to-End Named Entity Recognition (NER) pipeline for historical documents. It is designed to handle the specific challenges of historical data, including OCR noise, archaic language, and complex document structures .
 
 **Key Technologies:**
 * **Model:** `dbmdz/bert-base-historic-multilingual-cased` (hmBERT).
@@ -20,18 +20,18 @@ thesis/
 │   └── data/
 │       └── v2.1/
 │           └── hipe2020/       # Target Dataset (Newspapers)
+├── napoleonic_wars.txt         # Test data
 ├── ner/                        # Source Code
+│   ├── corpus_inference.py     # Inference on longer corpus
 │   ├── hipe_loader.py          # Custom Data Ingestion
-│   ├── tokenize_and_align.py   # Preprocessing & Sliding Window
+│   ├── inference.py            # Inference Demo
 │   ├── metrics.py              # Evaluation Logic
 │   ├── run_training.py         # Main Training Loop
-│   └── inference.py            # Inference Demo
+│   └── tokenize_and_align.py   # Preprocessing & Sliding Window
 └── requirements.txt
-
 ```
 
 ---
-
 ## 3. Component Details
 
 ### A. Data Ingestion (`hipe_loader.py`)
@@ -39,35 +39,51 @@ thesis/
 **Role:** Parses the non-standard HIPE-2022 TSV format.
 
 **Key Features:**
-* **Header Skipping:** Explicitly detects and skips metadata (`#`) and header rows (`TOKEN`) to prevent data corruption.
-* **Sentence Aggregation:** Reconstructs sentences from vertical token lists using empty-line delimiters .
-* **Schema Definition:** Maps all 10+ columns (Literal vs. Metonymic) for future "Vertical Stem" experiments .
 
+* **Header Skipping:** Explicitly detects and skips metadata (`#`) and header rows (`TOKEN`) to prevent data corruption.
+* **Sentence Aggregation:** Reconstructs sentences from vertical token lists using empty-line delimiters.
+* **Schema Definition:** Maps coarse and fine-grained labels (Literal vs. Metonymic) for flexible training configurations.
 
 ### B. Preprocessing (`tokenize_and_align.py`)
 
-**Role:** Prepares text for BERT.
+**Role:** Prepares text for BERT and handles label alignment.
 
 **Key Features:**
-* **Sliding Window:** Cuts long documents (often >512 tokens) into overlapping 128-token chunks to solve data scarcity.
-* **Subword Alignment:** Aligns labels to the first subword of a token (e.g., `Paris` -> `Pa`(B-LOC), `##ris`(-100)) .
-* **Masking:** Assigns `-100` to special tokens and null annotations so they don't affect the loss.
+
+* **Sliding Window:** Automatically segments long documents (>512 tokens) into overlapping 128-token chunks to prevent truncation and maximize context.
+* **Label Filtering:** Dynamically eliminates noisy or irrelevant classes (e.g., `scope`, `work`, `object`) to focus the model on high-value entities.
+* **-100 Masking Strategy:** Aligns labels to the first subword of a token (e.g., `Ulm` -> `Ul`(B-LOC), `##m`(-100)). Masking subwords and special tokens ensures the loss function ignores structural artifacts.
 
 ### C. Evaluation (`metrics.py`)
 
 **Role:** Computes rigorous Span-Level F1 scores.
 
 **Key Features:**
-* **Seqeval:** Uses standard CoNLL-style evaluation.
-* **Filtering:** Removes all `-100` masks before calculation to ensure accuracy .
+
+* **Seqeval Integration:** Uses standard CoNLL-style evaluation to assess the model's ability to identify full entity spans rather than just individual tokens.
+* **Validation Filtering:** Automatically removes `-100` masks and padding before calculation to provide an intellectually honest assessment of model performance.
 
 ### D. Training Orchestrator (`run_training.py`)
 
-**Role:** Integrates all components and fine-tunes the model.
+**Role:** Fine-tunes the model using specialized historical NLP strategies.
 
 **Key Features:**
-* **Dynamic Padding:** Uses `DataCollatorForTokenClassification` for efficiency.
-* **Hyperparameters:** Tuned for small historical datasets (LR: 3e-5, Epochs: 5) .
+
+* **Weighted Categorical Cross-Entropy:** Implements a custom `WeightedTrainer` to address class imbalance.
+* **Dynamic IDF Weighting:** Calculates class weights inversely proportional to their frequency in the training data. This ensures rare entities (like `pers` or `loc`) have a higher impact on the loss than the dominant `O` (Outside) class.
+* **Weight Sharing:** Groups  and  tags by category during weight calculation to ensure semantic unity and prevent fragmented entity detection.
+
+### E. Post-Processing & KG Aggregation (`corpus_inference.py`)
+
+**Role:** Transforms raw model predictions into "Graph-Ready" nodes.
+
+**Key Features:**
+
+* **Knowledge Graph Aggregator:** A custom multi-stage algorithm that reassembles subwords (e.g., `178` + `##9` → `1789`) and merges consecutive tokens with identical labels into single spans.
+* **Confidence Thresholding:** Implements a strict probability filter (default: **0.85**) to eliminate "noisy" entities from the final Knowledge Graph.
+* **CSV Export:** Generates `ner_results.csv`, a structured list of cleaned entities, labels, and average confidence scores optimized for graph database ingestion.
+
+---
 
 ## 4. Execution Commands
 

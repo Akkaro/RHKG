@@ -26,3 +26,6 @@ venv/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Project specific
+ner_results.csv
