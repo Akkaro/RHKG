@@ -1,9 +1,10 @@
 from transformers import AutoTokenizer
 
 # 1. hmBERT was pre-trained on historical text
-MODEL_CHECKPOINT = "dbmdz/bert-base-historic-multilingual-cased"
+# MODEL_CHECKPOINT = "dbmdz/bert-base-historic-multilingual-cased"
+MODEL_CHECKPOINT = "Babelscape/wikineural-multilingual-ner"
 
-def get_label_list(dataset):
+def get_label_list(dataset, column="ne_coarse_lit"):
     """
     Extract all unique named-entity labels from a dataset.
     
@@ -13,18 +14,18 @@ def get_label_list(dataset):
     :return: A sorted list of unique labels.
     """
     unique_labels = set()
-    excluded_categories = ["scope", "work", "object"]
+    excluded_categories = ["scope", "object"]
     for split in dataset.keys():
-        for tags in dataset[split]["ne_coarse_lit"]:
+        for tags in dataset[split][column]:
             for tag in tags:
                 if not any(cat in tag.lower() for cat in excluded_categories):
                     unique_labels.add(tag)
     return sorted(list(unique_labels))
 
-def tokenize_and_format(dataset):
+def tokenize_and_format(dataset, column="ne_coarse_lit", labels=None):
     print("--- Loading Tokenizer (Standard Mode) ---")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
-    label_list = get_label_list(dataset)
+    label_list = labels if labels is not None else get_label_list(dataset, column)
     
     # Create Mappings
     label2id = {l: i for i, l in enumerate(label_list)}
@@ -41,7 +42,7 @@ def tokenize_and_format(dataset):
             max_length=512            # Max length for BERT-based models
         )
         
-        all_labels = examples["ne_coarse_lit"]
+        all_labels = examples[column]
         new_labels = []
         
         for i, labels in enumerate(all_labels):
@@ -77,12 +78,14 @@ def tokenize_and_format(dataset):
         tokenized_inputs["labels"] = new_labels
         return tokenized_inputs
 
+    any_split = list(dataset.keys())[0]
+    column_names = dataset[any_split].column_names
+    
     # Apply to dataset
     # Note: batched=True is essential for sliding window
     tokenized_datasets = dataset.map(
         tokenize_function, 
         batched=True, 
-        remove_columns=dataset["train"].column_names
+        remove_columns=column_names
     )
-    
     return tokenized_datasets, label2id, id2label

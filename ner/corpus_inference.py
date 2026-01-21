@@ -3,8 +3,7 @@ import os
 import re
 from transformers import pipeline, AutoTokenizer, AutoModelForTokenClassification
 
-MODEL_PATH = "./hipe-ajmc-model-final"
-# The file containing the text corpus
+MODEL_PATH = "./models/final/hipe-ajmc-multilingual-model-v4"
 CORPUS_FILE = "napoleonic_wars.txt"
 
 def split_into_sentences(text):
@@ -15,7 +14,7 @@ def split_into_sentences(text):
     sentences = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s', text)
     return [s.strip() for s in sentences if s.strip()]
 
-def aggregate_for_kg(raw_results, threshold=0.85):
+def aggregate_for_kg(raw_results, threshold=0.7):
     """
     Manually aggregates tokens for Knowledge Graph ingestion.
     Merges subwords and consecutive identical labels even if both are 'B-'.

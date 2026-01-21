@@ -8,7 +8,7 @@ from transformers import (
     DataCollatorForTokenClassification,
     EarlyStoppingCallback,
 )
-from datasets import DatasetDict, Dataset
+from datasets import DatasetDict, Dataset, concatenate_datasets
 import os
 import numpy as np
 from collections import Counter
@@ -84,31 +84,47 @@ class WeightedTrainer(Trainer):
 def main():
     print(f"--- Starting Training Pipeline on {get_device().upper()} ---")
     # 1. Load Data
-    base_path = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "HIPE-2022-data",
-            "data",
-            "v2.1",
-            "ajmc",
-            "en",
-        )
-    )
+    dataset_names = ["ajmc", "letemps", "newseye", "sonar", "topres19th"]
+    languages = ["en", "de", "fr", "fi", "sv"]
+    
+    train_sets = []
+    val_sets = []
 
-    files = {
-        "train": os.path.join(base_path, "HIPE-2022-v2.1-ajmc-train-en.tsv"),
-        "validation": os.path.join(base_path, "HIPE-2022-v2.1-ajmc-test-en.tsv"),
-    }
+    data_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "HIPE-2022-data", "data", "v2.1"))
+    
+    for ds in dataset_names:
+        for lang in languages:
+            folder_path = os.path.join(data_root, ds, lang)
+            
+            train_file = os.path.join(folder_path, f"HIPE-2022-v2.1-{ds}-train-{lang}.tsv")
+            test_file = os.path.join(folder_path, f"HIPE-2022-v2.1-{ds}-test-{lang}.tsv")
+            dev_file = os.path.join(folder_path, f"HIPE-2022-v2.1-{ds}-dev-{lang}.tsv")
 
-    raw_datasets = DatasetDict()
-    for split, path in files.items():
-        raw_datasets[split] = Dataset.from_generator(
-            hipe_generator, features=HIPE_FEATURES, gen_kwargs={"filepath": path}
-        )
+            # Try to load training data
+            if os.path.exists(train_file):
+                print(f"  [FOUND] Train: {ds}-{lang}")
+                train_sets.append(Dataset.from_generator(
+                    hipe_generator, features=HIPE_FEATURES, gen_kwargs={"filepath": train_file}
+                ))
+            
+            # Try to load validation data (prefer 'test' if it exists, else 'dev')
+            eval_path = test_file if os.path.exists(test_file) else (dev_file if os.path.exists(dev_file) else None)
+            if eval_path:
+                print(f"  [FOUND] Eval:  {ds}-{lang}")
+                val_sets.append(Dataset.from_generator(
+                    hipe_generator, features=HIPE_FEATURES, gen_kwargs={"filepath": eval_path}
+                ))
 
+    
+    print(f"\nSuccessfully loaded {len(train_sets)} training files and {len(val_sets)} validation files.")
+
+    # Combine into a single DatasetDict
+    raw_datasets = DatasetDict({
+        "train": concatenate_datasets(train_sets),
+        "validation": concatenate_datasets(val_sets) if val_sets else train_sets[0] # Fallback if no val data
+    })
     # 2. Tokenize & Align
-    tokenized_datasets, label2id, id2label = tokenize_and_format(raw_datasets)
+    tokenized_datasets, label2id, id2label = tokenize_and_format(raw_datasets, column="ne_coarse_lit")
 
     print("\n" + "=" * 40)
     print(f"RAW Documents:       {len(raw_datasets['train'])}")
@@ -127,7 +143,11 @@ def main():
     # 4. Model Initialization
     print(f"Initializing Model: {MODEL_CHECKPOINT} with {len(label2id)} labels.")
     model = AutoModelForTokenClassification.from_pretrained(
-        MODEL_CHECKPOINT, num_labels=len(label2id), id2label=id2label, label2id=label2id
+        MODEL_CHECKPOINT, 
+        num_labels=len(label2id), 
+        id2label=id2label, 
+        label2id=label2id,
+        ignore_mismatched_sizes=True # add this if not hmBERT is the starting point
     )
 
     # 5. Tokenizer & Data Collator
@@ -140,13 +160,13 @@ def main():
 
     # 6. Training Arguments
     args = TrainingArguments(
-        output_dir="hipe-ajmc-model",
+        output_dir="models/checkpoints/hipe-ajmc-multilingual-model-v5",
         eval_strategy="epoch",
         save_strategy="epoch",
-        learning_rate=3e-5,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
-        num_train_epochs=10,
+        learning_rate=5e-5,
+        per_device_train_batch_size=4,
+        per_device_eval_batch_size=4,
+        num_train_epochs=5,
         weight_decay=0.01,
         logging_steps=10,
         load_best_model_at_end=True,
@@ -172,7 +192,7 @@ def main():
     trainer.train()
 
     print("--- Saving Final Model ---")
-    trainer.save_model("hipe-ajmc-model-final")
+    trainer.save_model("models/final/hipe-ajmc-multilingual-model-v5")
 
 
 if __name__ == "__main__":

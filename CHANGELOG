@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 -->
+## [0.0.2] - 2025-01-21
+
+### Added
+- multiple example corpuses added
+- run_evaluation.py, responsible for calcualting the F1 Score, Precision, Recall, Accuracy
+
+### Changed
+- hipe_loader.py adapted to normalize datasets, using MASTER_TAG_MAP and standardize_tag function
+- tokenize_and_alligne.py changed to work with dynamical feature selection
+- tokenize_and_alligne.py changed to work with with only test datasets as well (dynamical selection of "test" set if exists)
+- run_training.py adapted to run training on multiple datasets
+
 ## [0.0.1] - 2025-01-19
 
 ### Added

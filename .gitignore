@@ -12,10 +12,7 @@ __pycache__/
 *.bin
 
 # Model folders
-hipe-ajmc-model/
-hipe-ajmc-model-final/
-ner/hipe-ajmc-model/
-ner/hipe-ajmc-model-final/
+models/
 
 # Environment and logs
 .venv/

@@ -120,3 +120,103 @@ python ner/run_training.py
 python ner/inference.py
 
 ```
+
+## 5. Execution Commands
+
+Models:
+### hipe-ajmc-model-final
+- base model: dbmdz/bert-base-historic-multilingual-cased
+- trained only on the English corpora of the AJMC dataset
+- "scope", "work", "object" classes are excluded
+- batch size of 16, 10 fine-tuning epochs, learning rate of 3e-5
+========================================
+FINAL METRICS: hipe-ajmc-model-final
+----------------------------------------
+F1 Score:  0.8688
+Precision: 0.8067
+Recall:    0.9412
+Accuracy:  0.9949
+========================================
+
+
+
+### hipe-ajmc-multilingual-model
+- base model: dbmdz/bert-base-historic-multilingual-cased
+- trained on the entire corpora of the AJMC dataset, concatenating the English, German and Franch data for train and test respectively
+- "scope", "work", "object" classes are excluded
+- batch size of 16, 10 fine-tuning epochs, learning rate of 3e-5
+========================================
+FINAL METRICS: hipe-ajmc-multilingual-model
+----------------------------------------
+F1 Score:  0.8433
+Precision: 0.8052
+Recall:    0.8851
+Accuracy:  0.9914
+========================================
+
+
+
+### hipe-ajmc-multilingual-model-v1
+- base model: dbmdz/bert-base-historic-multilingual-cased
+- trained on the entire corpora of the AJMC dataset, concatenating the English, German and Franch data for train and test respectively
+- "scope", "object" classes are excluded
+- batch size of 16, 10 fine-tuning epochs, learning rate of 3e-5
+========================================
+FINAL METRICS: hipe-ajmc-multilingual-model-v1
+----------------------------------------
+F1 Score:  0.8188
+Precision: 0.7633
+Recall:    0.8829
+Accuracy:  0.9823
+========================================
+
+
+
+### hipe-ajmc-multilingual-model-v2
+- base model: dbmdz/bert-base-historic-multilingual-cased
+- trained on the entire corpora of the AJMC dataset, concatenating the English, German and Franch data for train and test respectively
+- "scope", "object" classes are excluded
+- used fine grained tags
+- batch size of 16, 10 fine-tuning epochs, learning rate of 3e-5
+========================================
+FINAL METRICS: hipe-ajmc-multilingual-model-v2
+----------------------------------------
+F1 Score:  0.6840
+Precision: 0.6024
+Recall:    0.7911
+Accuracy:  0.9716
+========================================
+
+
+
+### hipe-ajmc-multilingual-model-v3
+- base model: Babelscape/wikineural-multilingual-ner
+- trained on the entire corpora of the AJMC dataset, concatenating the English, German and Franch data for train and test respectively
+- "scope", "object" classes are excluded
+- used fine grained tags
+- batch size of 16, 10 fine-tuning epochs, learning rate of 3e-5
+========================================
+FINAL METRICS: hipe-ajmc-multilingual-model-v3
+----------------------------------------
+F1 Score:  0.7014
+Precision: 0.6458
+Recall:    0.7674
+Accuracy:  0.9767
+========================================
+
+
+
+### hipe-ajmc-multilingual-model-v4
+- base model: dbmdz/bert-base-historic-multilingual-cased
+- trained on all dataset ("ajmc", "letemps", "newseye", "sonar", "topres19th"), all languages ("en", "de", "fr", "fi", "sv")
+- Tag Set: 'B-date', 'B-loc', 'B-org', 'B-pers', 'B-work', 'I-date', 'I-loc', 'I-org', 'I-pers', 'I-work', 'O'
+- batch size of 4, 5 fine-tuning epochs, learning rate of 5e-5
+- PROBLEM: cannot measure with
+========================================
+FINAL METRICS: hipe-ajmc-multilingual-model-v4
+----------------------------------------
+F1 Score:  0.5499
+Precision: 0.4858
+Recall:    0.6333
+Accuracy:  0.9566
+========================================
